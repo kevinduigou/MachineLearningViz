@@ -289,6 +289,7 @@ const App = () => {
           forwardValues={forwardValues}
           backwardGradients={backwardGradients}
           displayMode={displayMode}
+          currentPhase={currentPhase}
           flashingElements={flashingElements}
           onGateHover={handleGateHover}
           onGateLeave={handleGateLeave}
