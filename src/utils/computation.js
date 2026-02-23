@@ -109,3 +109,47 @@ export const appendToLossHistory = (currentHistory, newLoss, maxLength = 500) =>
     ? updatedHistory.slice(updatedHistory.length - maxLength)
     : updatedHistory;
 };
+
+/**
+ * Computes average gradients and losses over a dataset
+ * @param {Object} weights - { w0, w1, w2 }
+ * @param {Array<{x0:number,x1:number,y:number}>} dataset
+ * @returns {{ averageGradients: Object, averageLoss: number, sampleLosses: number[] }}
+ */
+export const computeBatchMetrics = (weights, dataset) => {
+  if (!dataset.length) {
+    return {
+      averageGradients: { w0: 0, w1: 0, w2: 0 },
+      averageLoss: 0,
+      sampleLosses: []
+    };
+  }
+
+  const totals = dataset.reduce((acc, sample) => {
+    const { forwardValues, backwardGradients } = computeForwardBackward(
+      weights,
+      { x0: sample.x0, x1: sample.x1 },
+      sample.y
+    );
+
+    return {
+      w0: acc.w0 + backwardGradients.w0,
+      w1: acc.w1 + backwardGradients.w1,
+      w2: acc.w2 + backwardGradients.w2,
+      loss: acc.loss + forwardValues.loss,
+      sampleLosses: [...acc.sampleLosses, forwardValues.loss]
+    };
+  }, { w0: 0, w1: 0, w2: 0, loss: 0, sampleLosses: [] });
+
+  const size = dataset.length;
+
+  return {
+    averageGradients: {
+      w0: totals.w0 / size,
+      w1: totals.w1 / size,
+      w2: totals.w2 / size
+    },
+    averageLoss: totals.loss / size,
+    sampleLosses: totals.sampleLosses
+  };
+};

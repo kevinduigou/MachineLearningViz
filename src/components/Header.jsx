@@ -1,14 +1,15 @@
 import { formatValue } from '../utils/formatting';
 
-const Header = ({ 
-  forwardValues, 
-  targetValue, 
-  currentPhase, 
-  isTraining, 
+const Header = ({
+  forwardValues,
+  targetValue,
+  averageLoss,
+  currentPhase,
+  isTraining,
   isStepping,
-  onStep, 
-  onReset, 
-  onToggleTraining 
+  onStep,
+  onReset,
+  onToggleTraining
 }) => {
   const trainButtonText = isTraining ? '■ Stop' : '▶ Train';
   const trainButtonClass = isTraining ? 'train-btn running' : 'train-btn';
@@ -17,7 +18,7 @@ const Header = ({
     <header>
       <div className="header-left">
         <h1>∇ Backprop + Training</h1>
-        <span className="header-sub">2-input sigmoid neuron · MSE loss</span>
+        <span className="header-sub">2-input sigmoid neuron · mini-dataset mode</span>
       </div>
       <div className="header-right">
         <div className="loss-badge">
@@ -30,8 +31,8 @@ const Header = ({
             <span className="lval-tgt">{formatValue(targetValue)}</span>
           </div>
           <div>
-            <span className="lkey">loss</span>
-            <span className="lval-loss">{formatValue(forwardValues.loss)}</span>
+            <span className="lkey">avg loss</span>
+            <span className="lval-loss">{formatValue(averageLoss)}</span>
           </div>
         </div>
         <div className="phase-strip">
@@ -47,8 +48,8 @@ const Header = ({
             ③ Update w
           </div>
         </div>
-        <button 
-          className="step-btn" 
+        <button
+          className="step-btn"
           onClick={onStep}
           disabled={isStepping || isTraining}
         >

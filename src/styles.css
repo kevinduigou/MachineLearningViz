@@ -271,3 +271,39 @@ input[type=range].lr-sl::-webkit-slider-thumb  { background: var(--loss); }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+
+.loss-distribution {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  background: #0e1118;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.dist-title {
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.dist-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 44px;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.dist-label, .dist-value { font-size: 8px; color: var(--muted); }
+.dist-bar-wrap {
+  height: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dist-bar {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(245,158,11,.4), rgba(245,158,11,1));
+}
