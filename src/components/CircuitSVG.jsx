@@ -1,12 +1,13 @@
 import { formatConditionalValue, formatValue } from '../utils/formatting';
 
-const CircuitSVG = ({ 
-  weights, 
-  inputs, 
-  targetValue, 
-  forwardValues, 
-  backwardGradients, 
+const CircuitSVG = ({
+  weights,
+  inputs,
+  targetValue,
+  forwardValues,
+  backwardGradients,
   displayMode,
+  currentPhase,
   flashingElements,
   onGateHover,
   onGateLeave
@@ -51,9 +52,67 @@ const CircuitSVG = ({
     return positions[id] || 0;
   };
 
+  const wireDefs = [
+    { id: 'w0-mul0', x1: 82, y1: 57, x2: 212, y2: 97, fwd: weights.w0, bwd: backwardGradients.w0 },
+    { id: 'x0-mul0', x1: 82, y1: 117, x2: 212, y2: 107, fwd: inputs.x0, bwd: backwardGradients.x0 },
+    { id: 'w1-mul1', x1: 82, y1: 198, x2: 212, y2: 210, fwd: weights.w1, bwd: backwardGradients.w1 },
+    { id: 'x1-mul1', x1: 82, y1: 258, x2: 212, y2: 220, fwd: inputs.x1, bwd: backwardGradients.x1 },
+    { id: 'w2-add', x1: 82, y1: 310, x2: 333, y2: 184, fwd: weights.w2, bwd: backwardGradients.w2 },
+    { id: 'mul0-add', x1: 252, y1: 106, x2: 333, y2: 173, fwd: forwardValues.mul0, bwd: backwardGradients.mul0 },
+    { id: 'mul1-add', x1: 252, y1: 216, x2: 333, y2: 180, fwd: forwardValues.mul1, bwd: backwardGradients.mul1 },
+    { id: 'add-neg', x1: 375, y1: 176, x2: 432, y2: 176, fwd: forwardValues.add, bwd: backwardGradients.add },
+    { id: 'neg-exp', x1: 474, y1: 176, x2: 532, y2: 176, fwd: forwardValues.neg, bwd: backwardGradients.neg },
+    { id: 'exp-add1c', x1: 574, y1: 176, x2: 632, y2: 176, fwd: forwardValues.exp, bwd: backwardGradients.exp },
+    { id: 'add1c-inv', x1: 674, y1: 176, x2: 732, y2: 176, fwd: forwardValues.add1c, bwd: backwardGradients.add1c },
+    { id: 'inv-out', x1: 774, y1: 176, x2: 840, y2: 176, fwd: forwardValues.out, bwd: backwardGradients.inv },
+    { id: 'out-loss', x1: 882, y1: 176, x2: 945, y2: 176, fwd: forwardValues.out, bwd: backwardGradients.out },
+    { id: 'target-loss', x1: 985, y1: 136, x2: 985, y2: 154, fwd: targetValue, bwd: 0 },
+    { id: 'loss-box', x1: 1025, y1: 176, x2: 1082, y2: 176, fwd: forwardValues.loss, bwd: 0 }
+  ];
+
+  const maxForward = Math.max(...wireDefs.map((wire) => Math.abs(wire.fwd)), 1e-6);
+  const maxBackward = Math.max(...wireDefs.map((wire) => Math.abs(wire.bwd)), 1e-6);
+
+  const forwardActive = currentPhase === 'fwd' || (!currentPhase && displayMode !== 'bwd');
+  const backwardActive = currentPhase === 'bwd' || (!currentPhase && displayMode !== 'fwd');
+
+  const getLogScaledIntensity = (value, maxValue) => {
+    const safeMagnitude = Math.abs(value);
+    return Math.log1p(safeMagnitude) / Math.log1p(maxValue);
+  };
+
+  const renderFlowWire = (wire) => {
+    const forwardIntensity = getLogScaledIntensity(wire.fwd, maxForward);
+    const backwardIntensity = getLogScaledIntensity(wire.bwd, maxBackward);
+
+    const phaseClass = currentPhase === 'bwd' ? 'wire-flow-bwd' : 'wire-flow-fwd';
+    const opacity = currentPhase === 'bwd'
+      ? (backwardActive ? 0.12 + backwardIntensity * 0.78 : 0)
+      : (forwardActive ? 0.12 + forwardIntensity * 0.78 : 0);
+    const strokeWidth = currentPhase === 'bwd'
+      ? (1.2 + backwardIntensity * 4)
+      : (1.2 + forwardIntensity * 4);
+
+    return (
+      <g key={wire.id}>
+        <line className="wire" x1={wire.x1} y1={wire.y1} x2={wire.x2} y2={wire.y2} />
+        <line
+          className={`wire-flow ${phaseClass}`}
+          x1={wire.x1}
+          y1={wire.y1}
+          x2={wire.x2}
+          y2={wire.y2}
+          style={{ opacity, strokeWidth }}
+        />
+      </g>
+    );
+  };
+
+  const invLocalDerivative = -1 / (forwardValues.add1c ** 2);
+
   return (
     <main className="canvas-wrap">
-      <svg id="circuit" viewBox="0 0 1140 360" xmlns="http://www.w3.org/2000/svg" 
+      <svg id="circuit" viewBox="0 0 1140 360" xmlns="http://www.w3.org/2000/svg"
            style={{ minWidth: '900px', minHeight: '320px', width: '100%', height: '100%' }}>
         <defs>
           <marker id="arr-bwd" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
@@ -70,23 +129,14 @@ const CircuitSVG = ({
         </defs>
 
         {/* Wires */}
-        <line className="wire" x1="82" y1="57" x2="212" y2="97"/>
-        <line className="wire" x1="82" y1="117" x2="212" y2="107"/>
-        <line className="wire" x1="82" y1="198" x2="212" y2="210"/>
-        <line className="wire" x1="82" y1="258" x2="212" y2="220"/>
-        <line className="wire" x1="82" y1="310" x2="333" y2="184"/>
-        <line className="wire" x1="252" y1="106" x2="333" y2="173"/>
-        <line className="wire" x1="252" y1="216" x2="333" y2="180"/>
-        <line className="wire" x1="375" y1="176" x2="432" y2="176"/>
-        <line className="wire" x1="474" y1="176" x2="532" y2="176"/>
-        <line className="wire" x1="574" y1="176" x2="632" y2="176"/>
-        <line className="wire" x1="674" y1="176" x2="732" y2="176"/>
-        <line className="wire" x1="774" y1="176" x2="840" y2="176"/>
-        <line className="wire" x1="882" y1="176" x2="945" y2="176"/>
-        <line className="wire" x1="985" y1="136" x2="985" y2="154"/>
-        <line className="wire" x1="1025" y1="176" x2="1082" y2="176"/>
+        {wireDefs.map(renderFlowWire)}
         <line x1="945" y1="164" x2="885" y2="164" stroke="#ff6b6b" strokeWidth="1.5"
               strokeDasharray="5,4" markerEnd="url(#arr-bwd)" opacity="0.55"/>
+        {(currentPhase === 'bwd' || (!currentPhase && displayMode !== 'fwd')) && (
+          <text className="edge-derivative-label" x="703" y="163" textAnchor="middle">
+            −1/x² = {formatValue(invLocalDerivative)}
+          </text>
+        )}
 
         {/* Input Nodes */}
         <rect x="40" y="41" width="42" height="30" rx="4" fill="var(--surface2)" stroke="var(--highlight)" strokeWidth="1.2"/>
@@ -217,7 +267,7 @@ const CircuitSVG = ({
           <text x="985" y="182" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="7" fill="var(--loss)">(ŷ−y)²</text>
         </g>
         {renderBwdText('gt-loss-b', backwardGradients.out)}
-        <text className={flashingElements['lbl-dLdout'] || ''} id="lbl-dLdout" x="915" y="159" textAnchor="middle" 
+        <text className={flashingElements['lbl-dLdout'] || ''} id="lbl-dLdout" x="915" y="159" textAnchor="middle"
               fontFamily="JetBrains Mono" fontSize="8" fill="#ff6b6b" opacity="0.8">
           ∂L/∂ŷ={formatValue(backwardGradients.out)}
         </text>
